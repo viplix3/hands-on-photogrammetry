@@ -60,11 +60,11 @@ void CameraCalibration::generate3DPointsForSelectedFrames() {
 }
 
 void CameraCalibration::calibrateCamera() {
-	std::vector<cv::Mat> rvecs, tvecs;
 	cv::Size imageSize = m_selectedFrames[0].size();
 
 	rootMeanSquaredError = cv::calibrateCamera(m_objectPoints, m_imagePoints, imageSize,
-														K, distortionCoeff, rvecs, tvecs);
+														K, distortionCoeff, rotationVectors,
+														translationVectors);
 }
 
 void CameraCalibration::printCalibrationParameters() {
