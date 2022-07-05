@@ -40,4 +40,12 @@ public:
 	
 	void printCalibrationParameters();
 	void saveCalibrationParameters(const char* filePath);
+
+	void distortionCorrection(const char* outputFileName);
 };
+
+inline std::ostream& operator<<(std::ostream& outStream, std::vector<cv::Mat> cvMatVector) {
+	for(const auto data : cvMatVector)
+		outStream << data;
+	return outStream;
+}

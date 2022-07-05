@@ -30,6 +30,11 @@ void CameraCalibration::selectCalibrationFramesFromVideo() {
 			std::vector<cv::Point2f> cornerPoints;
 			bool patternWasFound = cv::findChessboardCorners(currFrame, m_boardPattern, cornerPoints);
 
+			if(patternWasFound == false) {
+				std::cout << "Couldn't find sufficient number of points in the frame, skipping.." << std::endl;
+				continue;
+			}
+
 			cv::Mat cornerDisplayImage = currFrame.clone();
 			cv::drawChessboardCorners(cornerDisplayImage, m_boardPattern, cornerPoints, patternWasFound);
 			cv::imshow("Camera Calibration", cornerDisplayImage);
@@ -45,6 +50,7 @@ void CameraCalibration::selectCalibrationFramesFromVideo() {
 		}
 	}
 	m_videoReader.release();
+	cv::destroyAllWindows();
 }
 
 void CameraCalibration::generate3DPointsForSelectedFrames() {
@@ -67,12 +73,56 @@ void CameraCalibration::calibrateCamera() {
 														translationVectors);
 }
 
+void CameraCalibration::distortionCorrection(const char* outputFileName) {
+	std::cout << "\n\nWriting output video.." << std::endl;
+	if(std::strlen(outputFileName) == 0) {
+		std::cout << "Invalid output file name" << std::endl;
+		return;
+	}
+
+	bool videoFileStatus = openVideoFile();
+	if(videoFileStatus == false) {
+		std::cout << "Couldn't open input video file " << m_inputVideoFile << std::endl;
+		return;
+	}
+
+	cv::Size imageSize = m_selectedFrames[0].size();
+	cv::Mat distortedFrame, undistortedFrame, stitchedFrame;
+	cv::Mat distortionCorrectionMap1, distortionCorrectionMap2;
+
+	// Need to figure out how to pass double the width to video writer, temp. sol. for now
+	cv::hconcat(m_selectedFrames[0], m_selectedFrames[0], stitchedFrame);
+	cv::VideoWriter outputVideo(outputFileName, cv::VideoWriter::fourcc('h', '2', '6', '4'),
+										20, stitchedFrame.size(), true);
+
+	while(true) {
+		m_videoReader >> distortedFrame;
+
+		if(distortedFrame.empty())
+			break;
+
+		if(distortionCorrectionMap1.empty() || distortionCorrectionMap2.empty())
+			cv::initUndistortRectifyMap(K, distortionCoeff, cv::Mat(), cv::Mat(), imageSize,
+										CV_32FC1, distortionCorrectionMap1, distortionCorrectionMap2);
+
+		cv::remap(distortedFrame, undistortedFrame, distortionCorrectionMap1, distortionCorrectionMap2,
+					cv::InterpolationFlags::INTER_LINEAR);
+		cv::hconcat(distortedFrame, undistortedFrame, stitchedFrame);
+		outputVideo.write(stitchedFrame);
+	}
+	outputVideo.release();
+
+	std::cout << "Done!" << std::endl;
+}
+
 void CameraCalibration::printCalibrationParameters() {
 	std::cout << "\n\n\n";
 	std::cout << "Camera Calibration Results" << std::endl;
 	std::cout << "Number of images used: " << m_selectedFrames.size() << std::endl;
 	std::cout << "Root Mean Squared Error: " << rootMeanSquaredError << std::endl;
 	std::cout << "Camera Matrix (K)" << std::endl << K.row(0) << "\n" << K.row(1) << "\n" << K.row(2) << std::endl;
+	// std::cout << "Rotation vector: " << rotationVectors << std::endl;
+	// std::cout << "Translation vector: " << translationVectors << std::endl;
 	std::cout << "Distortion Coefficients (k1, k2, p1, p2, k3, ...): "
 					<< " " << distortionCoeff.t() << std::endl;
 }
@@ -84,6 +134,8 @@ void CameraCalibration::saveCalibrationParameters(const char* filePath) {
 	calibrationReport << "Number of images used: " << m_selectedFrames.size() << std::endl;
 	calibrationReport << "Root Mean Squared Error: " << rootMeanSquaredError << std::endl;
 	calibrationReport << "Camera Matrix (K)" << std::endl << K.row(0) << "\n" << K.row(1) << "\n" << K.row(2) << std::endl;
+	// calibrationReport << "Rotation vector: " << rotationVectors << std::endl;
+	// calibrationReport << "Translation vector: " << translationVectors << std::endl;
 	calibrationReport << "Distortion Coefficients (k1, k2, p1, p2, k3, ...): "
 					<< " " << distortionCoeff.t() << std::endl;
 }

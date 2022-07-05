@@ -2,7 +2,7 @@
 #include "camera_calib.h"
 
 bool checkInputParams(int argc, const char** argv) {
-	if(argc <= 3 || argc > 5) {
+	if(argc <= 4 || argc > 6) {
 		std::cout << "Insufficient parameters\n";
 		std::cout << "Usage ./camera-calibration ${PATH_TO_CHECKERBOARD_PATTERN_IMAGES} ";
 		std::cout << "${BOARD_CELL_SIZE} ${NUM_BOARD_CELLS_X} ${NUM_BOARD_CELLS_Y}" << std::endl;
@@ -17,7 +17,8 @@ int main(int argc, const char** argv) {
 
 	const char* inputVideoFile = argv[1];
 	cv::Size boardPattern(std::stoi(argv[2]), std::stoi(argv[3]));
-	float cellSize = (argc == 4) ? (std::stof(argv[4])) : 1.0f;
+	float cellSize = (argc == 5) ? (std::stof(argv[4])) : 1.0f;
+	const char* outputFileName = (argc == 6) ? (argv[5]) : "";
 
 	CameraCalibration camCalibrator(inputVideoFile, boardPattern, cellSize);
 
@@ -27,7 +28,7 @@ int main(int argc, const char** argv) {
 
 	camCalibrator.selectCalibrationFramesFromVideo();
 	if(camCalibrator.numSelectedFrames() <= 10) {
-		std::cout << "Number of selected frames are very less, need 10 frames for optimal parameter estimation";
+		std::cout << "Number of selected frames are very less, need 10 frames for optimal parameter estimation\n";
 		std::cout << "Exiting..." << std::endl;
 		return -2;
 	}
@@ -38,6 +39,8 @@ int main(int argc, const char** argv) {
 	camCalibrator.calibrateCamera();
 	camCalibrator.printCalibrationParameters();
 	camCalibrator.saveCalibrationParameters("../../resources/CalibrationReport.txt");
+
+	camCalibrator.distortionCorrection(outputFileName);
 
 	return 0;
 }
