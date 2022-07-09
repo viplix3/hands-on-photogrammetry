@@ -4,8 +4,9 @@
 bool checkInputParams(int argc, const char** argv) {
 	if(argc <= 4 || argc > 6) {
 		std::cout << "Insufficient parameters\n";
-		std::cout << "Usage ./camera-calibration ${PATH_TO_CHECKERBOARD_PATTERN_IMAGES} ";
-		std::cout << "${BOARD_CELL_SIZE} ${NUM_BOARD_CELLS_X} ${NUM_BOARD_CELLS_Y}" << std::endl;
+		std::cout << "Usage ./camera-calibration ${CHECKERBOARD_PATTERN_INPUT_VIDEO_PATH} ";
+		std::cout << "${NUM_BOARD_CELLS_X} ${NUM_BOARD_CELLS_Y} ${BOARD_CELL_SIZE} ";
+		std::cout << "{DISTORTION_CORRECTED_OUTPUT_VIDEO_PATH}" << std::endl;
 		return false;
 	}
 	return true;
@@ -39,6 +40,7 @@ int main(int argc, const char** argv) {
 	camCalibrator.calibrateCamera();
 	camCalibrator.printCalibrationParameters();
 	camCalibrator.saveCalibrationParameters("../../resources/CalibrationReport.txt");
+	camCalibrator.reportReprojectionError();
 
 	camCalibrator.distortionCorrection(outputFileName);
 

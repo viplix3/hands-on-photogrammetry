@@ -24,7 +24,7 @@ private:
 
 	cv::Mat K = cv::Mat::eye(3, 3, CV_64F); // Camera Matrix
 	cv::Mat distortionCoeff = cv::Mat::zeros(4, 1, CV_64F); // Camera distortion coefficients
-	std::vector<cv::Mat> rotationVectors, translationVectors;
+	std::vector<cv::Mat> rotationVectors, translationVectors; // rotationVectors is for Rodrigues rotation (axis-angle)
 
 public:
 	CameraCalibration(const char* videoFilePath, cv::Size boardPattern, float cellSize)
@@ -40,6 +40,7 @@ public:
 	
 	void printCalibrationParameters();
 	void saveCalibrationParameters(const char* filePath);
+	void reportReprojectionError();
 
 	void distortionCorrection(const char* outputFileName);
 };

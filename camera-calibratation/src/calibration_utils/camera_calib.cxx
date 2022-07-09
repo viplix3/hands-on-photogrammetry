@@ -121,8 +121,6 @@ void CameraCalibration::printCalibrationParameters() {
 	std::cout << "Number of images used: " << m_selectedFrames.size() << std::endl;
 	std::cout << "Root Mean Squared Error: " << rootMeanSquaredError << std::endl;
 	std::cout << "Camera Matrix (K)" << std::endl << K.row(0) << "\n" << K.row(1) << "\n" << K.row(2) << std::endl;
-	// std::cout << "Rotation vector: " << rotationVectors << std::endl;
-	// std::cout << "Translation vector: " << translationVectors << std::endl;
 	std::cout << "Distortion Coefficients (k1, k2, p1, p2, k3, ...): "
 					<< " " << distortionCoeff.t() << std::endl;
 }
@@ -134,8 +132,23 @@ void CameraCalibration::saveCalibrationParameters(const char* filePath) {
 	calibrationReport << "Number of images used: " << m_selectedFrames.size() << std::endl;
 	calibrationReport << "Root Mean Squared Error: " << rootMeanSquaredError << std::endl;
 	calibrationReport << "Camera Matrix (K)" << std::endl << K.row(0) << "\n" << K.row(1) << "\n" << K.row(2) << std::endl;
-	// calibrationReport << "Rotation vector: " << rotationVectors << std::endl;
-	// calibrationReport << "Translation vector: " << translationVectors << std::endl;
 	calibrationReport << "Distortion Coefficients (k1, k2, p1, p2, k3, ...): "
 					<< " " << distortionCoeff.t() << std::endl;
+}
+
+void CameraCalibration::reportReprojectionError() {
+	float meanReprojectionError = 0.0f;
+	std::vector<cv::Point2f> reprojectedImagePoints;
+	
+	for(int i = 0; i < m_objectPoints.size(); i++) {
+		cv::projectPoints(m_objectPoints[i], rotationVectors[i], translationVectors[i],
+							K, distortionCoeff, reprojectedImagePoints);
+
+		float reprojectionError = cv::norm(m_imagePoints[i], reprojectedImagePoints,
+									cv::NORM_L2) / m_imagePoints.size();
+		meanReprojectionError += reprojectionError;
+	}
+	
+	meanReprojectionError /= m_objectPoints.size();
+	std::cout << "Mean reporjection error (lower is better) : " << meanReprojectionError;
 }
